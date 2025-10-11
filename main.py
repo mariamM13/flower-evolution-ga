@@ -2,6 +2,7 @@ import tkinter as tk
 import random
 import math
 import time
+import copy
 
 
 class Flower:
@@ -102,7 +103,15 @@ class FlowerGUI:
         self.flower_positions.append((cx, cy, flower))
 
         # Show fitness text
-        self.canvas.create_text(cx, cy + 60, text=f"Fitness: {flower.fitness:.2f}", font=("Arial", 10))
+        cols = 4
+        row = index // cols  # 0 = top row, 1 = bottom row
+
+        if row == 0:
+            text_y = 50   # fixed height near top
+        else:
+            text_y = 560  # fixed height near bottom
+
+        self.canvas.create_text(cx, text_y, text=f"Fitness: {flower.fitness:.2f}", font=("Arial", 10))
 
     def on_hover_start(self, index):
         """Record when hover starts."""
@@ -151,7 +160,7 @@ class FlowerGUI:
         print("\n Crossover and Mutation Results:")
         for i in range(len(self.population)):
             p1, p2 = random.sample(parents, 2)
-            print(f"\n➡️  Reproduction {i + 1}:")
+            print(f"\n***  Reproduction {i + 1}:")
             print(f"Parent 1: {p1}")
             print(f"Parent 2: {p2}")
 
@@ -181,30 +190,111 @@ class FlowerGUI:
 
 
     def crossover(self, parent1, parent2, prob=0.65):
-        """Mix genes from two parents."""
-        if random.random() > prob:
-            return random.choice([parent1, parent2])  # No crossover → clone one
+        """Binary crossover with safe cloning and fitness reset."""
 
-        return Flower(
-            center_size=random.choice([parent1.center_size, parent2.center_size]),
-            center_color=tuple(random.choice([c1, c2]) for c1, c2 in zip(parent1.center_color, parent2.center_color)),
-            petal_color=tuple(random.choice([c1, c2]) for c1, c2 in zip(parent1.petal_color, parent2.petal_color)),
-            stem_color=tuple(random.choice([c1, c2]) for c1, c2 in zip(parent1.stem_color, parent2.stem_color)),
-            num_petals=random.choice([parent1.num_petals, parent2.num_petals])
+        def binary_crossover(v1, v2, bits=8):
+            b1, b2 = format(v1, f'0{bits}b'), format(v2, f'0{bits}b')
+            # choose a random crossover point (1..bits-1)
+            point = random.randint(1, bits - 1)
+            child_bin = b1[:point] + b2[point:]
+            return int(child_bin, 2)
+
+        # If no crossover, clone parent's genes into a NEW Flower (do NOT return the same object)
+        if random.random() > prob:
+            src = random.choice([parent1, parent2])
+            child = Flower(
+                center_size = src.center_size,
+                center_color = tuple(src.center_color),
+                petal_color = tuple(src.petal_color),
+                stem_color = tuple(src.stem_color),
+                num_petals = src.num_petals,
+                fitness = 0.0   # IMPORTANT: reset fitness for offspring
+            )
+            return child
+
+        # Otherwise create child via binary crossover on each gene
+        child = Flower(
+            center_size = binary_crossover(parent1.center_size, parent2.center_size, bits=5),
+            center_color = tuple(binary_crossover(c1, c2, bits=8) for c1, c2 in zip(parent1.center_color, parent2.center_color)),
+            petal_color  = tuple(binary_crossover(c1, c2, bits=8) for c1, c2 in zip(parent1.petal_color, parent2.petal_color)),
+            stem_color   = tuple(binary_crossover(c1, c2, bits=8) for c1, c2 in zip(parent1.stem_color, parent2.stem_color)),
+            num_petals   = binary_crossover(parent1.num_petals, parent2.num_petals, bits=3),
+            fitness = 0.0
         )
 
+        return child
+
+
     def mutate(self, flower, rate=0.05):
-        """Randomly tweak some attributes."""
-        if random.random() < rate:
-            flower.center_size = max(5, flower.center_size + random.randint(-2, 2))
-        if random.random() < rate:
-            flower.num_petals = max(0, flower.num_petals + random.randint(-1, 1))
-        if random.random() < rate:
-            flower.center_color = tuple(min(255, max(0, c + random.randint(-30, 30))) for c in flower.center_color)
-        if random.random() < rate:
-            flower.petal_color = tuple(min(255, max(0, c + random.randint(-30, 30))) for c in flower.petal_color)
-        if random.random() < rate:
-            flower.stem_color = tuple(min(255, max(0, c + random.randint(-30, 30))) for c in flower.stem_color)
+        """Perform bit-level mutation (flip ~4 bits per flower DNA)."""
+
+        # Helper: convert a value to binary string with fixed bits
+        def to_bin(value, bits):
+            return format(value, f'0{bits}b')
+
+        # Helper: convert binary string back to int
+        def to_int(binary):
+            return int(binary, 2)
+
+        # --- Encode full DNA into one binary string (80 bits total) ---
+        dna = (
+            to_bin(flower.center_size, 5) +
+            ''.join(to_bin(c, 8) for c in flower.center_color) +
+            ''.join(to_bin(c, 8) for c in flower.petal_color) +
+            ''.join(to_bin(c, 8) for c in flower.stem_color) +
+            to_bin(flower.num_petals, 3)
+        )
+
+        dna_list = list(dna)
+        dna_length = len(dna_list)
+
+        # --- Flip bits with probability = rate ---
+        for i in range(dna_length):
+            if random.random() < rate:
+                dna_list[i] = '1' if dna_list[i] == '0' else '0'
+
+        mutated_dna = ''.join(dna_list)
+
+        # --- Decode DNA back into flower attributes ---
+        idx = 0
+        flower.center_size = to_int(mutated_dna[idx:idx+5]); idx += 5
+
+        flower.center_color = tuple(
+            to_int(mutated_dna[idx + i*8: idx + (i+1)*8]) for i in range(3)
+        )
+        idx += 24
+
+        flower.petal_color = tuple(
+            to_int(mutated_dna[idx + i*8: idx + (i+1)*8]) for i in range(3)
+        )
+        idx += 24
+
+        flower.stem_color = tuple(
+            to_int(mutated_dna[idx + i*8: idx + (i+1)*8]) for i in range(3)
+        )
+        idx += 24
+
+        flower.num_petals = to_int(mutated_dna[idx:idx+3])
+        self.repair_flower(flower)
+
+
+    def repair_flower(self, flower):
+        """Ensure all mutated attributes stay within valid and aesthetic ranges."""
+
+        # Keep center size between 8 and 20 (so flower stays visible)
+        flower.center_size = min(max(flower.center_size, 8), 20)
+
+        # Keep colors in valid RGB range (0–255)
+        flower.center_color = tuple(min(max(c, 0), 255) for c in flower.center_color)
+        flower.petal_color = tuple(min(max(c, 0), 255) for c in flower.petal_color)
+        flower.stem_color = tuple(min(max(c, 0), 255) for c in flower.stem_color)
+
+        # Keep petals between 0–7
+        flower.num_petals = min(max(flower.num_petals, 0), 7)
+
+        return flower
+
+
 
     @staticmethod
     def rgb_to_hex(rgb):
