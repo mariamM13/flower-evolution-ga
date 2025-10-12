@@ -2,7 +2,6 @@ import tkinter as tk
 import random
 import math
 import time
-import copy
 
 
 class Flower:
@@ -48,6 +47,10 @@ class FlowerGUI:
 
         self.button = tk.Button(root, text="Evolve Next Generation", command=self.evolve)
         self.button.pack(pady=10)
+
+        self.generation = 1
+        self.generation_label = tk.Label(root, text=f"Generation: {self.generation}", font=("Arial", 14, "bold"))
+        self.generation_label.pack(pady=5)
 
         # Hover tracking
         self.hover_start = None
@@ -107,19 +110,17 @@ class FlowerGUI:
         row = index // cols  # 0 = top row, 1 = bottom row
 
         if row == 0:
-            text_y = 50   # fixed height near top
+            text_y = 50  
         else:
-            text_y = 560  # fixed height near bottom
+            text_y = 560  
 
         self.canvas.create_text(cx, text_y, text=f"Fitness: {flower.fitness:.2f}", font=("Arial", 10))
 
     def on_hover_start(self, index):
-        """Record when hover starts."""
         self.hover_start = time.time()
         self.hover_flower = index
 
     def on_hover_end(self, index):
-        """Increase fitness based on hover duration."""
         if self.hover_start is not None and self.hover_flower == index:
             duration = time.time() - self.hover_start
             self.population[index].fitness += duration
@@ -129,21 +130,21 @@ class FlowerGUI:
             self.draw_population()  
 
     def evolve(self):
-        """Perform selection, crossover, and mutation, with detailed logging."""
-        print("\n==================== EVOLUTION STEP ====================")
+        print("\n EVOLUTION STEP")
 
-        # --- 1. Show Current Population ---
+        self.generation += 1
+        self.generation_label.config(text=f"Generation: {self.generation}")
+
         print("\n Current Population:")
         for i, f in enumerate(self.population, start=1):
             print(f"{i}: {f}")
 
-        # --- 2. Sort and Display by Fitness ---
         sorted_pop = sorted(self.population, key=lambda f: f.fitness, reverse=True)
         print("\n Population after Sorting by Fitness:")
         for i, f in enumerate(sorted_pop, start=1):
             print(f"{i}: {f}")
 
-        # --- 3. Selection (Roulette Wheel) ---
+        # Selection (Roulette Wheel) 
         total_fitness = sum(f.fitness for f in self.population)
         if total_fitness == 0:
             parents = random.choices(self.population, k=len(self.population))
@@ -155,43 +156,36 @@ class FlowerGUI:
         for i, p in enumerate(parents, start=1):
             print(f"Parent {i}: {p}")
 
-        # --- 4. Crossover and Mutation ---
+        # Crossover and Mutation
         new_population = []
         print("\n Crossover and Mutation Results:")
         for i in range(len(self.population)):
             p1, p2 = random.sample(parents, 2)
-            print(f"\n***  Reproduction {i + 1}:")
+            print(f"\n Reproduction {i + 1}:")
             print(f"Parent 1: {p1}")
             print(f"Parent 2: {p2}")
 
-            # Crossover
             child = self.crossover(p1, p2)
 
-            print(f"  ↳ Child (after crossover): {child}")
+            print(f" Child (after crossover): {child}")
 
-            # Mutation
             print(" Before mutation:", child)
             self.mutate(child)
             print(" After mutation :", child)
 
             new_population.append(child)
 
-        # --- 5. Update Population ---
         self.population = new_population
 
         print("\n Updated Population (Next Generation):")
         for i, f in enumerate(self.population, start=1):
             print(f"{i}: {f}")
 
-        print("========================================================\n")
-
-        # Redraw flowers on the canvas
+        # Redraw flowers
         self.draw_population()
 
 
     def crossover(self, parent1, parent2, prob=0.65):
-        """Binary crossover with safe cloning and fitness reset."""
-
         def binary_crossover(v1, v2, bits=8):
             b1, b2 = format(v1, f'0{bits}b'), format(v2, f'0{bits}b')
             # choose a random crossover point (1..bits-1)
@@ -199,7 +193,7 @@ class FlowerGUI:
             child_bin = b1[:point] + b2[point:]
             return int(child_bin, 2)
 
-        # If no crossover, clone parent's genes into a NEW Flower (do NOT return the same object)
+        # If no crossover, clone parent's genes into a NEW Flower
         if random.random() > prob:
             src = random.choice([parent1, parent2])
             child = Flower(
@@ -208,7 +202,7 @@ class FlowerGUI:
                 petal_color = tuple(src.petal_color),
                 stem_color = tuple(src.stem_color),
                 num_petals = src.num_petals,
-                fitness = 0.0   # IMPORTANT: reset fitness for offspring
+                fitness = 0.0   
             )
             return child
 
@@ -226,17 +220,13 @@ class FlowerGUI:
 
 
     def mutate(self, flower, rate=0.05):
-        """Perform bit-level mutation (flip ~4 bits per flower DNA)."""
 
-        # Helper: convert a value to binary string with fixed bits
         def to_bin(value, bits):
             return format(value, f'0{bits}b')
 
-        # Helper: convert binary string back to int
         def to_int(binary):
             return int(binary, 2)
 
-        # --- Encode full DNA into one binary string (80 bits total) ---
         dna = (
             to_bin(flower.center_size, 5) +
             ''.join(to_bin(c, 8) for c in flower.center_color) +
@@ -248,14 +238,12 @@ class FlowerGUI:
         dna_list = list(dna)
         dna_length = len(dna_list)
 
-        # --- Flip bits with probability = rate ---
         for i in range(dna_length):
             if random.random() < rate:
                 dna_list[i] = '1' if dna_list[i] == '0' else '0'
 
         mutated_dna = ''.join(dna_list)
 
-        # --- Decode DNA back into flower attributes ---
         idx = 0
         flower.center_size = to_int(mutated_dna[idx:idx+5]); idx += 5
 
@@ -279,17 +267,12 @@ class FlowerGUI:
 
 
     def repair_flower(self, flower):
-        """Ensure all mutated attributes stay within valid and aesthetic ranges."""
-
-        # Keep center size between 8 and 20 (so flower stays visible)
         flower.center_size = min(max(flower.center_size, 8), 20)
 
-        # Keep colors in valid RGB range (0–255)
         flower.center_color = tuple(min(max(c, 0), 255) for c in flower.center_color)
         flower.petal_color = tuple(min(max(c, 0), 255) for c in flower.petal_color)
         flower.stem_color = tuple(min(max(c, 0), 255) for c in flower.stem_color)
 
-        # Keep petals between 0–7
         flower.num_petals = min(max(flower.num_petals, 0), 7)
 
         return flower
