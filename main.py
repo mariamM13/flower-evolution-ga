@@ -195,6 +195,8 @@ class FlowerGUI:
 
         # If no crossover, clone parent's genes into a NEW Flower
         if random.random() > prob:
+            print("❌ No crossover (child is a clone)")
+
             src = random.choice([parent1, parent2])
             child = Flower(
                 center_size = src.center_size,
@@ -206,6 +208,7 @@ class FlowerGUI:
             )
             return child
 
+
         # Otherwise create child via binary crossover on each gene
         child = Flower(
             center_size = binary_crossover(parent1.center_size, parent2.center_size, bits=5),
@@ -215,6 +218,7 @@ class FlowerGUI:
             num_petals   = binary_crossover(parent1.num_petals, parent2.num_petals, bits=3),
             fitness = 0.0
         )
+        print("✅ Crossover happened")
 
         return child
 
