@@ -146,63 +146,88 @@ class FlowerGUI:
             print(flower.to_array())
 
         # Elitism Selection
-
         elites = sorted_pop[:4]
-
-        new_population = elites + [copy.deepcopy(flower) for flower in elites]
+        new_population = elites + [copy.deepcopy(f) for f in elites]
 
         print("\n Selected Population:")
         for flower in new_population:
+            print(flower.to_array())
+
+        random.shuffle(new_population)
+
+        print("\nCrossover and Mutation Results:")
+        children = []
+
+        for i in range(0, len(new_population), 2):
+            p1, p2 = new_population[i], new_population[i + 1]
+
+            print(f"\nPair {i // 2 + 1}:")
+            print("Parent 1:", p1.to_array())
+            print("Parent 2:", p2.to_array())
+
+            child1, child2 = self.crossover(p1, p2)
+
+            # ---- MUTATION ----
+            print("Before mutation (child1):", child1.to_array())
+            self.mutate(child1)
+            print("After mutation  (child1):", child1.to_array())
+
+            print("Before mutation (child2):", child2.to_array())
+            self.mutate(child2)
+            print("After mutation  (child2):", child2.to_array())
+
+            children.extend([child1, child2])
+
+        # Update population
+        self.population = children[:len(self.population)]
+
+        # Reset fitness
+        for f in self.population:
+            f.fitness = 0.0
+
+        print("\nUpdated Population:")
+        for f in self.population:
             print(f.to_array())
 
-        print("\n Crossover and Mutation Results:")
-        for i in range(len(self.population)):
-            p1, p2 = random.sample(parents, 2)
-            print(f"\n Reproduction {i + 1}:")
-            print(f"Parent 1: {p1.to_array()}")
-            print(f"Parent 2: {p2.to_array()}")
 
-            child = self.crossover(p1, p2)
-            print(f" Child (after crossover): {child.to_array()}")
-
-            print(" Before mutation:", child.to_array())
-            self.mutate(child)
-            print(" After mutation :", child.to_array())
-
-            new_population.append(child)
-
-        self.population = new_population
-
-        print("\n Updated Population (Next Generation):")
-        for i, f in enumerate(self.population, start=1):
-            print(f"{i}: {f.to_array()}")
-        
         self.draw_population()
 
 
-
     def crossover(self, parent1, parent2, prob=0.65):
-        def binary_crossover(v1, v2, bits=8):
-            b1, b2 = format(v1, f'0{bits}b'), format(v2, f'0{bits}b')
-            # choose a random crossover point (1..bits-1)
-            point = random.randint(1, bits - 1)
-            child_bin = b1[:point] + b2[point:]
-            return int(child_bin, 2)
 
-        # If no crossover, clone parent's genes into a NEW Flower
+        genes1 = parent1.to_array()
+        genes2 = parent2.to_array()
+
+
         if random.random() > prob:
-            print("❌ No crossover (child is a clone)")
+            print("No crossover (children are clones)")
+            child1_genes, child2_genes = genes1[:], genes2[:]
+        else:
+            point = random.randint(1, len(genes1) - 1)
+            print(f"Crossover happened at point {point}")
+            child1_genes = genes1[:point] + genes2[point:]
+            child2_genes = genes2[:point] + genes1[point:]
 
-            src = random.choice([parent1, parent2])
-            child = Flower(
-                center_size = src.center_size,
-                center_color = tuple(src.center_color),
-                petal_color = tuple(src.petal_color),
-                stem_color = tuple(src.stem_color),
-                num_petals = src.num_petals,
-                fitness = 0.0   
+        def create_flower(genes):
+            return Flower(
+                center_size=genes[0],
+                center_color=tuple(genes[1:4]),
+                petal_color=tuple(genes[4:7]),
+                stem_color=tuple(genes[7:10]),
+                num_petals=genes[10],
+                fitness=0.0
             )
-            return child # return child 1, child 2 
+
+        child1 = create_flower(child1_genes)
+        child2 = create_flower(child2_genes)
+
+        print("Parent 1:", genes1)
+        print("Parent 2:", genes2)
+        print("Child 1 :", child1_genes)
+        print("Child 2 :", child2_genes)
+
+        return child1, child2
+
         
         ## parent 1 : [11,255,10,|103,70,5]
         ## parent 2 : [15,100,200,|50,150,3]
@@ -222,17 +247,6 @@ class FlowerGUI:
 
 
         # Otherwise create child via binary crossover on each gene
-        child = Flower(
-            center_size = binary_crossover(parent1.center_size, parent2.center_size, bits=5),
-            center_color = tuple(binary_crossover(c1, c2, bits=8) for c1, c2 in zip(parent1.center_color, parent2.center_color)),
-            petal_color  = tuple(binary_crossover(c1, c2, bits=8) for c1, c2 in zip(parent1.petal_color, parent2.petal_color)),
-            stem_color   = tuple(binary_crossover(c1, c2, bits=8) for c1, c2 in zip(parent1.stem_color, parent2.stem_color)),
-            num_petals   = binary_crossover(parent1.num_petals, parent2.num_petals, bits=3),
-            fitness = 0.0
-        )
-        print("✅ Crossover happened")
-
-        return child
 
 
     def mutate(self, flower, rate=0.05):
