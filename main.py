@@ -206,7 +206,23 @@ class FlowerGUI:
                 num_petals = src.num_petals,
                 fitness = 0.0   
             )
-            return child
+            return child # return child 1, child 2 
+        
+        ## parent 1 : [11,255,10,|103,70,5]
+        ## parent 2 : [15,100,200,|50,150,3]
+
+        ## randam.randam()<0.65
+        ## generate randam cut point 
+        ## child 1: [11,255,10,50,150,3]
+        ## child 2: [15,100,200, 103,70,5]
+
+        ## child1: parent 1
+        ## child2: parent 2
+        
+        ## mutation : prob check for each gene for each indiv < 0.05 --> flip
+
+        ## population1: [11,255,10,50,150,3] 
+        ## rande 8 -20 , 11 --> randam.rand()<0.05  then randam.randint(0,20)
 
 
         # Otherwise create child via binary crossover on each gene
