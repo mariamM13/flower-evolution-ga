@@ -2,6 +2,7 @@ import tkinter as tk
 import random
 import math
 import time
+import copy
 
 
 class Flower:
@@ -13,16 +14,14 @@ class Flower:
         self.num_petals = num_petals
         self.fitness = fitness
 
-    def __repr__(self):
-        return (
-            f"Flower(center_size={self.center_size}, "
-            f"center_color={self.center_color}, "
-            f"petal_color={self.petal_color}, "
-            f"stem_color={self.stem_color}, "
-            f"num_petals={self.num_petals}, "
-            f"fitness={self.fitness:.2f})"
-        )
-
+    def to_array(self):
+        return [
+            self.center_size,
+            *self.center_color,
+            *self.petal_color,
+            *self.stem_color,
+            self.num_petals
+        ]
 
 def create_population(size=8):
     return [
@@ -60,8 +59,9 @@ class FlowerGUI:
         self.population = create_population()
         self.flower_positions = []  # Track each flower’s clickable area
         self.draw_population()
+        print("Initial Population:")
         for flower in self.population:
-            print (flower)
+            print(flower.to_array())
 
     def draw_population(self):
         """Draw all flowers and attach hover listeners."""
@@ -136,42 +136,38 @@ class FlowerGUI:
         self.generation_label.config(text=f"Generation: {self.generation}")
 
         print("\n Current Population:")
-        for i, f in enumerate(self.population, start=1):
-            print(f"{i}: {f}")
+        for flower in self.population:
+            print(flower.to_array())
+
 
         sorted_pop = sorted(self.population, key=lambda f: f.fitness, reverse=True)
-        print("\n Population after Sorting by Fitness:")
-        for i, f in enumerate(sorted_pop, start=1):
-            print(f"{i}: {f}")
+        print("\n Population after Sorting:")
+        for flower in sorted_pop:
+            print(flower.to_array())
 
-        # Selection (Roulette Wheel) 
-        total_fitness = sum(f.fitness for f in self.population)
-        if total_fitness == 0:
-            parents = random.choices(self.population, k=len(self.population))
-        else:
-            probs = [f.fitness / total_fitness for f in self.population]
-            parents = random.choices(self.population, weights=probs, k=len(self.population))
+        # Elitism Selection
 
-        print("\n Selected Flowers for Reproduction:")
-        for i, p in enumerate(parents, start=1):
-            print(f"Parent {i}: {p}")
+        elites = sorted_pop[:4]
 
-        # Crossover and Mutation
-        new_population = []
+        new_population = elites + [copy.deepcopy(flower) for flower in elites]
+
+        print("\n Selected Population:")
+        for flower in new_population:
+            print(f.to_array())
+
         print("\n Crossover and Mutation Results:")
         for i in range(len(self.population)):
             p1, p2 = random.sample(parents, 2)
             print(f"\n Reproduction {i + 1}:")
-            print(f"Parent 1: {p1}")
-            print(f"Parent 2: {p2}")
+            print(f"Parent 1: {p1.to_array()}")
+            print(f"Parent 2: {p2.to_array()}")
 
             child = self.crossover(p1, p2)
+            print(f" Child (after crossover): {child.to_array()}")
 
-            print(f" Child (after crossover): {child}")
-
-            print(" Before mutation:", child)
+            print(" Before mutation:", child.to_array())
             self.mutate(child)
-            print(" After mutation :", child)
+            print(" After mutation :", child.to_array())
 
             new_population.append(child)
 
@@ -179,10 +175,10 @@ class FlowerGUI:
 
         print("\n Updated Population (Next Generation):")
         for i, f in enumerate(self.population, start=1):
-            print(f"{i}: {f}")
-
-        # Redraw flowers
+            print(f"{i}: {f.to_array()}")
+        
         self.draw_population()
+
 
 
     def crossover(self, parent1, parent2, prob=0.65):
