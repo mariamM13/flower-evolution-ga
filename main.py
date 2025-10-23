@@ -251,61 +251,37 @@ class FlowerGUI:
 
     def mutate(self, flower, rate=0.05):
 
-        def to_bin(value, bits):
-            return format(value, f'0{bits}b')
+        if random.random() < rate:
+            flower.center_size = random.randint(8, 20)
 
-        def to_int(binary):
-            return int(binary, 2)
+        if random.random() < rate:
+            flower.center_color = (
+                random.randint(0, 255),
+                random.randint(0, 255),
+                random.randint(0, 255)
+            )
 
-        dna = (
-            to_bin(flower.center_size, 5) +
-            ''.join(to_bin(c, 8) for c in flower.center_color) +
-            ''.join(to_bin(c, 8) for c in flower.petal_color) +
-            ''.join(to_bin(c, 8) for c in flower.stem_color) +
-            to_bin(flower.num_petals, 3)
-        )
+        if random.random() < rate:
+            flower.petal_color = (
+                random.randint(0, 255),
+                random.randint(0, 255),
+                random.randint(0, 255)
+            )
 
-        dna_list = list(dna)
-        dna_length = len(dna_list)
+        if random.random() < rate:
+            flower.stem_color = (
+                random.randint(0, 255),
+                random.randint(0, 255),
+                random.randint(0, 255)
+            )
 
-        for i in range(dna_length):
-            if random.random() < rate:
-                dna_list[i] = '1' if dna_list[i] == '0' else '0'
+        if random.random() < rate:
+            flower.num_petals = random.randint(0, 7)  
 
-        mutated_dna = ''.join(dna_list)
-
-        idx = 0
-        flower.center_size = to_int(mutated_dna[idx:idx+5]); idx += 5
-
-        flower.center_color = tuple(
-            to_int(mutated_dna[idx + i*8: idx + (i+1)*8]) for i in range(3)
-        )
-        idx += 24
-
-        flower.petal_color = tuple(
-            to_int(mutated_dna[idx + i*8: idx + (i+1)*8]) for i in range(3)
-        )
-        idx += 24
-
-        flower.stem_color = tuple(
-            to_int(mutated_dna[idx + i*8: idx + (i+1)*8]) for i in range(3)
-        )
-        idx += 24
-
-        flower.num_petals = to_int(mutated_dna[idx:idx+3])
-        self.repair_flower(flower)
-
-
-    def repair_flower(self, flower):
-        flower.center_size = min(max(flower.center_size, 8), 20)
-
-        flower.center_color = tuple(min(max(c, 0), 255) for c in flower.center_color)
-        flower.petal_color = tuple(min(max(c, 0), 255) for c in flower.petal_color)
-        flower.stem_color = tuple(min(max(c, 0), 255) for c in flower.stem_color)
-
-        flower.num_petals = min(max(flower.num_petals, 0), 7)
-
-        return flower
+        # NOTE:
+        # Each gene has an independent 5% chance to mutate.
+        # So sometimes no mutation happens
+        # Sometimes 1 or 2 traits mutate randomly 
 
 
 
