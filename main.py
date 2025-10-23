@@ -51,20 +51,17 @@ class FlowerGUI:
         self.generation_label = tk.Label(root, text=f"Generation: {self.generation}", font=("Arial", 14, "bold"))
         self.generation_label.pack(pady=5)
 
-        # Hover tracking
         self.hover_start = None
         self.hover_flower = None
 
-        # Initial population
         self.population = create_population()
-        self.flower_positions = []  # Track each flower’s clickable area
+        self.flower_positions = [] 
         self.draw_population()
         print("Initial Population:")
         for flower in self.population:
             print(flower.to_array())
 
     def draw_population(self):
-        """Draw all flowers and attach hover listeners."""
         self.canvas.delete("all")
         self.flower_positions.clear()
 
@@ -79,11 +76,9 @@ class FlowerGUI:
     def draw_flower(self, cx, cy, flower, index):
         size = flower.center_size
 
-        # Stem
         self.canvas.create_rectangle(cx - 6, cy, cx + 6, cy + size * 7,
                                      fill=self.rgb_to_hex(flower.stem_color), outline="")
 
-        # Petals
         for i in range(flower.num_petals):
             angle = 2 * math.pi * i / max(1, flower.num_petals)
             x = cx + math.cos(angle) * size * 1.2
@@ -92,22 +87,18 @@ class FlowerGUI:
                                     x + size * 1.2, y + size * 1.2,
                                     fill=self.rgb_to_hex(flower.petal_color), outline="")
 
-        # Center
         flower_id = self.canvas.create_oval(cx - size * 1.5, cy - size * 1.5,
                                             cx + size * 1.5, cy + size * 1.5,
                                             fill=self.rgb_to_hex(flower.center_color),
                                             outline="")
 
-        # Bind hover tracking
         self.canvas.tag_bind(flower_id, "<Enter>", lambda e, i=index: self.on_hover_start(i))
         self.canvas.tag_bind(flower_id, "<Leave>", lambda e, i=index: self.on_hover_end(i))
 
-        # Save clickable region
         self.flower_positions.append((cx, cy, flower))
 
-        # Show fitness text
         cols = 4
-        row = index // cols  # 0 = top row, 1 = bottom row
+        row = index // cols
 
         if row == 0:
             text_y = 50  
@@ -145,7 +136,6 @@ class FlowerGUI:
         for flower in sorted_pop:
             print(flower.to_array())
 
-        # Elitism Selection
         elites = sorted_pop[:4]
         new_population = elites + [copy.deepcopy(f) for f in elites]
 
@@ -167,7 +157,6 @@ class FlowerGUI:
 
             child1, child2 = self.crossover(p1, p2)
 
-            # ---- MUTATION ----
             print("Before mutation (child1):", child1.to_array())
             self.mutate(child1)
             print("After mutation  (child1):", child1.to_array())
@@ -178,10 +167,8 @@ class FlowerGUI:
 
             children.extend([child1, child2])
 
-        # Update population
         self.population = children[:len(self.population)]
 
-        # Reset fitness
         for f in self.population:
             f.fitness = 0.0
 
@@ -228,26 +215,6 @@ class FlowerGUI:
 
         return child1, child2
 
-        
-        ## parent 1 : [11,255,10,|103,70,5]
-        ## parent 2 : [15,100,200,|50,150,3]
-
-        ## randam.randam()<0.65
-        ## generate randam cut point 
-        ## child 1: [11,255,10,50,150,3]
-        ## child 2: [15,100,200, 103,70,5]
-
-        ## child1: parent 1
-        ## child2: parent 2
-        
-        ## mutation : prob check for each gene for each indiv < 0.05 --> flip
-
-        ## population1: [11,255,10,50,150,3] 
-        ## rande 8 -20 , 11 --> randam.rand()<0.05  then randam.randint(0,20)
-
-
-        # Otherwise create child via binary crossover on each gene
-
 
     def mutate(self, flower, rate=0.05):
 
@@ -277,12 +244,6 @@ class FlowerGUI:
 
         if random.random() < rate:
             flower.num_petals = random.randint(0, 7)  
-
-        # NOTE:
-        # Each gene has an independent 5% chance to mutate.
-        # So sometimes no mutation happens
-        # Sometimes 1 or 2 traits mutate randomly 
-
 
 
     @staticmethod
