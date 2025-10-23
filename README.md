@@ -56,9 +56,10 @@ A new generation replaces the old — carrying your preferred traits forward.
 
 | Generation 1 | Generation 3 | Generation 5 |
 |---------------|--------------|--------------|
-| ![Initial Flowers](assets/gen1.png) | ![Mid Evolution](assets/gen3.png) | ![Final Generation](assets/gen5.png) |
+| <img src="https://github.com/user-attachments/assets/960aae1b-f49e-40dc-b44a-dd760844d297" width="250"/> | <img src="https://github.com/user-attachments/assets/ba749be6-2b93-4174-a8f9-c39d1685dd2d" width="250"/> | <img src="https://github.com/user-attachments/assets/1da53663-bdd1-4175-8dc0-766ed574e8d9" width="250"/> |
 
-> _(Add your actual screenshots later — use consistent file naming for easy linking.)_
+
+
 
 ---
 
