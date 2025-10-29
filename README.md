@@ -41,7 +41,7 @@ Your **hover duration** determines how “fit” a flower is.
 The longer you hover → the higher its fitness score.
 
 ### 3️⃣ Selection
-Fitter flowers are more likely to reproduce using **roulette wheel selection**.
+Fitter flowers are more likely to reproduce using **elitism selection**.
 
 ### 4️⃣ Crossover & Mutation
 - **Crossover:** Two parent DNAs are combined bit-by-bit (65% chance).  
